@@ -32,7 +32,7 @@ BOUNDS = {'lamin': 37.7, 'lomin': -78.8, 'lamax': 38.3, 'lomax': -78.2}
 # Step 1 — Fetch Regional Flight Data
 # ---------------------------------------------------------------------------
 
-def get_opensky_token():
+'''def get_opensky_token():
     auth_url = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
     data = {
         "grant_type": "client_credentials",
@@ -41,12 +41,11 @@ def get_opensky_token():
     }
     response = requests.post(auth_url, data=data, timeout=10)
     response.raise_for_status()
-    return response.json().get("access_token")
+    return response.json().get("access_token")'''
 
 def fetch_flight_data():
-    # SKIP the get_opensky_token() call entirely
+    """Fetch current aircraft in bounds and return a summary for DynamoDB."""
     try:
-        # Just call the main states endpoint directly
         resp = requests.get(OPENSKY_URL, params=BOUNDS, timeout=20)
         resp.raise_for_status()
         data = resp.json()
