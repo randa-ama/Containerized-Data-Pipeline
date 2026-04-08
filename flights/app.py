@@ -43,7 +43,25 @@ def get_opensky_token():
     response.raise_for_status()
     return response.json().get("access_token")
 
-def fetch_flight_data() -> dict:
+def fetch_flight_data():
+    # SKIP the get_opensky_token() call entirely
+    try:
+        # Just call the main states endpoint directly
+        resp = requests.get(OPENSKY_URL, params=BOUNDS, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        states = data.get("states")
+        count = len(states) if states else 0
+        return {
+            "region_d": REGION_ID, # Matches your 'region_d' table key
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "flight_count": count
+        }
+    except Exception as e:
+        log.error(f"Fetch failed: {e}")
+        return None
+    
+'''def fetch_flight_data() -> dict:
     """Fetch current aircraft in bounds and return a summary for DynamoDB."""
     # Note: If you have an API key, use auth=(user, pass) in requests.get
     token = get_opensky_token()
@@ -60,7 +78,7 @@ def fetch_flight_data() -> dict:
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "flight_count": count,
         "unix_time": int(datetime.now(timezone.utc).timestamp())
-    }
+    }'''
 
 # ---------------------------------------------------------------------------
 # Step 2 — Fetch History & Generate Artifacts (CSV + Plot)
