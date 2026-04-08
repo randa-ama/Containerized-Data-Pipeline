@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: flight-tracker
+  namespace: default
+spec:
+  schedule: "*/15 * * * *"     # runs every 15 minutes
+  concurrencyPolicy: Forbid    # skip a run if the previous one is still going
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 10
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: flight-tracker
+              image: ghcr.io/randa-ama/ds5220-dp2:latest
+              imagePullPolicy: Always
+              env:
+                - name: DYNAMODB_TABLE
+                  value: "flight-tracking"
+
+                - name: S3_BUCKET
+                  value: "flight-activity-dp"
+
+                - name: AWS_REGION
+                  value: "us-east-1"
+                
+                - name: OPENSKY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: opensky-auth
+                      key: OPENSKY_ID
+
+                - name: OPENSKY_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: opensky-auth
+                      key: OPENSKY_SECRET
+
+                
