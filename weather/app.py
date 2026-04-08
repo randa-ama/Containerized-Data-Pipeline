@@ -18,6 +18,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
+LAT = 38.03
+LON = -78.50
 METEO_URL = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,wind_speed_10m"
 REGION_ID = "Central-VA"
 TABLE_NAME   = os.environ.get("DYNAMODB_TABLE", "dp2-tracking")
@@ -40,7 +42,7 @@ def fetch_weather_data():
         log.info(f"Weather Station {REGION_ID}: {temp}°C, Wind: {wind}km/h")
         
         return {
-            "region_d": REGION_ID,          
+            "region_id": REGION_ID,          
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "temp_celsius": Decimal(str(temp)), 
             "wind_speed": Decimal(str(wind)),
@@ -111,7 +113,7 @@ def upload_to_s3(plot_buf, df):
     # 3. Upload/Update Index.html to show the new plot
     html = f"""
     <html><body style="background:#f0f0f0; font-family:sans-serif; text-align:center;">
-        <h1>Live Flight Tracker: {REGION_ID}</h1>
+        <h1>Live Weather Tracker: {REGION_ID}</h1>
         <img src="plot.png?t={int(datetime.now().timestamp())}" style="max-width:90%; border:1px solid #ccc;">
         <p><a href="data.csv">Download raw data.csv</a></p>
         <p>Last updated: {datetime.now(timezone.utc)}</p>
