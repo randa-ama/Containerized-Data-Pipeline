@@ -18,66 +18,37 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 # --- CONFIGURATION ---
-OPENSKY_URL  = "https://opensky-network.org/api/states/all"
-REGION_ID    = "Central-VA"  
-TABLE_NAME   = os.environ.get("DYNAMODB_TABLE", "flight-tracking")
+METEO_URL = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,wind_speed_10m"
+REGION_ID = "Central-VA"
+TABLE_NAME   = os.environ.get("DYNAMODB_TABLE", "dp2-tracking")
 S3_BUCKET    = os.environ["S3_BUCKET"]
 AWS_REGION   = os.environ.get("AWS_REGION", "us-east-1")
 
 
-# Bounding Box for Central Virginia (lamin, lomin, lamax, lomax)
-BOUNDS = {'lamin': 37.7, 'lomin': -78.8, 'lamax': 38.3, 'lomax': -78.2}
 
-# ---------------------------------------------------------------------------
-# Step 1 — Fetch Regional Flight Data
-# ---------------------------------------------------------------------------
-
-'''def get_opensky_token():
-    auth_url = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
-    data = {
-        "grant_type": "client_credentials",
-        "client_id": os.environ["OPENSKY_ID"],
-        "client_secret": os.environ["OPENSKY_SECRET"]
-    }
-    response = requests.post(auth_url, data=data, timeout=10)
-    response.raise_for_status()
-    return response.json().get("access_token")'''
-
-def fetch_flight_data():
-    """Fetch current aircraft in bounds and return a summary for DynamoDB."""
+def fetch_weather_data():
+    """Fetch current temperature and wind speed."""
     try:
-        resp = requests.get(OPENSKY_URL, params=BOUNDS, timeout=20)
+        resp = requests.get(METEO_URL, timeout=20)
         resp.raise_for_status()
         data = resp.json()
-        states = data.get("states")
-        count = len(states) if states else 0
+        
+        current = data.get("current", {})
+        temp = current.get("temperature_2m", 0)
+        wind = current.get("wind_speed_10m", 0)
+        
+        log.info(f"Weather Station {REGION_ID}: {temp}°C, Wind: {wind}km/h")
+        
         return {
-            "region_d": REGION_ID, # Matches your 'region_d' table key
+            "region_d": REGION_ID,          
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "flight_count": count
+            "temp_celsius": Decimal(str(temp)), 
+            "wind_speed": Decimal(str(wind)),
+            "temp": int(temp)       
         }
     except Exception as e:
-        log.error(f"Fetch failed: {e}")
+        log.error(f"Weather data fetch failed: {e}")
         return None
-    
-'''def fetch_flight_data() -> dict:
-    """Fetch current aircraft in bounds and return a summary for DynamoDB."""
-    # Note: If you have an API key, use auth=(user, pass) in requests.get
-    token = get_opensky_token()
-    headers = {"Authorization": f"Bearer {token}"}
-    resp = requests.get(OPENSKY_URL, params=BOUNDS, headers=headers, timeout=(5,20))
-    resp.raise_for_status()
-    data = resp.json()
-    
-    states = data.get("states")
-    count = len(states) if states else 0
-    
-    return {
-        "region_id": REGION_ID,
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "flight_count": count,
-        "unix_time": int(datetime.now(timezone.utc).timestamp())
-    }'''
 
 # ---------------------------------------------------------------------------
 # Step 2 — Fetch History & Generate Artifacts (CSV + Plot)
@@ -99,7 +70,7 @@ def fetch_history(table) -> pd.DataFrame:
 
     df = pd.DataFrame(items)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
-    df["flight_count"] = df["flight_count"].astype(int)
+    df["temp"] = df["temp"].astype(int)
     return df.sort_values("timestamp").reset_index(drop=True)
 
 def generate_plot(df: pd.DataFrame) -> io.BytesIO | None:
@@ -109,10 +80,10 @@ def generate_plot(df: pd.DataFrame) -> io.BytesIO | None:
     sns.set_theme(style="darkgrid")
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    sns.lineplot(data=df, x="timestamp", y="flight_count", ax=ax, marker='o', color='#1E88E5')
+    sns.lineplot(data=df, x="timestamp", y="temp", ax=ax, marker='o', color='#1E88E5')
     
-    ax.set_title(f"Regional Air Traffic Activity: {REGION_ID}", fontweight='bold')
-    ax.set_ylabel("Number of Aircraft in Airspace")
+    ax.set_title(f"Regional Weather Activity: {REGION_ID}", fontweight='bold')
+    ax.set_ylabel("Temperature")
     ax.set_xlabel("Time (UTC)")
     
     plt.tight_layout()
@@ -155,15 +126,17 @@ def main():
     dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
     table = dynamodb.Table(TABLE_NAME)
 
-    # Ingest
-    entry = fetch_flight_data()
-    table.put_item(Item=entry)
-    log.info(f"Recorded {entry['flight_count']} flights for {REGION_ID}")
+    # 1. Ingest Weather
+    weather_entry = fetch_weather_data()
+    if weather_entry:
+        table.put_item(Item=weather_entry)
+        log.info(f"Successfully recorded weather for {REGION_ID}")
 
-    # Process & Publish
-    history_df = fetch_history(table)
-    plot_buf = generate_plot(history_df)
-    upload_to_s3(plot_buf, history_df)
+        # 2. Process & Publish
+        history_df = fetch_history(table)
+        if not history_df.empty:
+            plot_buf = generate_plot(history_df)
+            upload_to_s3(plot_buf, history_df)
 
 if __name__ == "__main__":
     main()

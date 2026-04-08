@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: flight-tracker
+  name: weather-tracker
   namespace: default
 spec:
   schedule: "*/15 * * * *"     # runs every 15 minutes
@@ -14,29 +14,17 @@ spec:
         spec:
           restartPolicy: OnFailure
           containers:
-            - name: flight-tracker
-              image: ghcr.io/randa-ama/flight-tracker:latest
+            - name: weather-tracker
+              image: ghcr.io/randa-ama/weather-tracker:latest
               imagePullPolicy: Always
               env:
                 - name: DYNAMODB_TABLE
-                  value: "flight-tracking"
+                  value: "dp2-tracking"
 
                 - name: S3_BUCKET
-                  value: "flight-activity-dp"
+                  value: "gba4fj-dp2"
 
                 - name: AWS_REGION
                   value: "us-east-1"
-                
-                - name: OPENSKY_ID
-                  valueFrom:
-                    secretKeyRef:
-                      name: opensky-auth
-                      key: OPENSKY_ID
-
-                - name: OPENSKY_SECRET
-                  valueFrom:
-                    secretKeyRef:
-                      name: opensky-auth
-                      key: OPENSKY_SECRET
 
                 
