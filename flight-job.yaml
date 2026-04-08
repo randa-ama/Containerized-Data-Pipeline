@@ -15,7 +15,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: flight-tracker
-              image: ghcr.io/randa-ama/ds5220-dp2:latest
+              image: ghcr.io/randa-ama/flight-tracker:latest
               imagePullPolicy: Always
               env:
                 - name: DYNAMODB_TABLE
