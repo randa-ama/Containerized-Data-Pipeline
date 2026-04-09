@@ -47,7 +47,7 @@ def fetch_weather_data():
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "temp_celsius": Decimal(str(temp)), 
             "wind_speed": Decimal(str(wind)),
-            "temp_f": float(temp_f)       
+            "temp_f": Decimal(str(round(temp_f, 2)))       
         }
     except Exception as e:
         log.error(f"Weather data fetch failed: {e}")
