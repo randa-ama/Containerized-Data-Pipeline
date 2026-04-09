@@ -38,15 +38,16 @@ def fetch_weather_data():
         current = data.get("current", {})
         temp = current.get("temperature_2m", 0)
         wind = current.get("wind_speed_10m", 0)
+        temp_f = (temp * 9/5) + 32
         
-        log.info(f"Weather Station {REGION_ID}: {temp}°C, Wind: {wind}km/h")
+        log.info(f"Weather Station {REGION_ID}: {temp_f}°F, Wind: {wind}km/h")
         
         return {
             "region_id": REGION_ID,          
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "temp_celsius": Decimal(str(temp)), 
             "wind_speed": Decimal(str(wind)),
-            "temp": int(temp)       
+            "temp_f": float(temp_f)       
         }
     except Exception as e:
         log.error(f"Weather data fetch failed: {e}")
@@ -72,7 +73,7 @@ def fetch_history(table) -> pd.DataFrame:
 
     df = pd.DataFrame(items)
     df["timestamp"] = pd.to_datetime(df["timestamp"])
-    df["temp"] = df["temp"].astype(int)
+    df["temp_f"] = pd.to_numeric(df["temp_f"])
     return df.sort_values("timestamp").reset_index(drop=True)
 
 def generate_plot(df: pd.DataFrame) -> io.BytesIO | None:
@@ -82,10 +83,10 @@ def generate_plot(df: pd.DataFrame) -> io.BytesIO | None:
     sns.set_theme(style="darkgrid")
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    sns.lineplot(data=df, x="timestamp", y="temp", ax=ax, marker='o', color='#1E88E5')
+    sns.lineplot(data=df, x="timestamp", y="temp_f", ax=ax, marker='o', color='#1E88E5')
     
     ax.set_title(f"Regional Weather Activity: {REGION_ID}", fontweight='bold')
-    ax.set_ylabel("Temperature")
+    ax.set_ylabel("Temperature (°F)")
     ax.set_xlabel("Time (UTC)")
     
     plt.tight_layout()
