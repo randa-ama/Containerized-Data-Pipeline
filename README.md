@@ -2,7 +2,7 @@
 
 ## Contents of the Repository
 - `weather` folder: contains core source code and environment configuration details
-  - `app.py`: main application script detailing the data ingestion from the OpenMateo API, processing, and process t0 output to S3 and DynamoDB
+  - `app.py`: main application script detailing the data ingestion from the OpenMateo API, processing, and process to output to S3 and DynamoDB
   - `Dockerfile`: defines the process of the Docker container construction
   - `requirements.txt`: manages the required Python packages needed for the environment
 - `weather-job.yaml`: defines the structure of the Kubernetes CronJob, including the execution interval, reference for the container image, and environment variables
