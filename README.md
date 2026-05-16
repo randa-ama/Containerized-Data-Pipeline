@@ -31,5 +31,3 @@ Every reading is also stored in an Amazon DynamoDB table, named dp-tracking. The
 
 The output plot, named plot.png, is a time series graph, showing the values of temperature in Fahrenheit over time from the earliest data ingestion to the most recent. The plot is created using the Python libraries matplotlib, pandas, and seaborn.
 
-
-Visualization (Plot): The application includes a Python-based processing script that uses Matplotlib or Seaborn to generate a time-series plot (e.g., weather_trend.png). This plot visualizes temperature fluctuations over the last 24–48 hours to identify local weather patterns.
