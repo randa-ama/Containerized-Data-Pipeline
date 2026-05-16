@@ -15,7 +15,7 @@ The process I am scheduling in this project is the ingesting, augmentation, and 
 
 This entire process was conducted utilizing AWS services. The services used were S3, EC2, and DynamoDB. The pipeline ran on a m7i-flex.large Ubuntu24.04 LTS EC2 instance within a Kubernetes cluster.
 
-The data was ingested using a Kubernetes CronJob, which was scheduled to run every 15 minutes. At this interval, a new pod would be created, connect to the API service, retrieve the data, calculate the relevant variables, create the outputs, upload them to DynamoDB and S3, and then shut down. The app detailing the processes the CronJob would run was detailed using Python. The Kuberneted sytem ensured that if a fetch failed, it would be retried 10 times before moving on to another pod.
+The data was ingested using a Kubernetes CronJob, which was scheduled to run every 15 minutes. At this interval, a new pod would be created, connect to the API service, retrieve the data, calculate the relevant variables, create the outputs, upload them to DynamoDB and S3, and then shut down. The app detailing the processes the CronJob would run was detailed using Python. The Kubernetes system ensured that if a fetch failed, it would be retried 10 times before moving on to another pod.
 
 ## Output Data & Persistence
 
